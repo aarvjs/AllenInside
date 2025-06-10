@@ -41,9 +41,9 @@ const { width, height } = Dimensions.get('window');
     duration: Math.random() * 5000 + 5000,
   }));
 
-  // const HandleLogin = () => {
-  //   navigation.navigate('Home');
-  // };
+  const handleLogin = () => {
+    navigation.navigate('Home');
+  };
 
   const goToRegister = () => {
     navigation.navigate('Registration');
@@ -64,21 +64,21 @@ const { width, height } = Dimensions.get('window');
     });
   }, []);
  
-  const handleLogin = () => {
-  console.log("Login button pressed");
+//   const handleLogin = () => {
+//   console.log("Login button pressed");
 
-  auth()
-    .signInWithEmailAndPassword(email, password)
-    .then(userCred => {
-      console.log("Firebase login successful");
-      Alert.alert("Login Successful", "Welcome!");
-      setTimeout(() => navigation.navigate('Home'), 1500);  // 1.5 second ke baad Home page pe le jayega
-    })
-    .catch(err => {
-      console.log("Login error:", err.message);
-      Alert.alert("Login failed", err.message);
-    });
-};
+//   auth()
+//     .signInWithEmailAndPassword(email, password)
+//     .then(userCred => {
+//       console.log("Firebase login successful");
+//       Alert.alert("Login Successful", "Welcome!");
+//       setTimeout(() => navigation.navigate('Home'), 1500);  // 1.5 second ke baad Home page pe le jayega
+//     })
+//     .catch(err => {
+//       console.log("Login error:", err.message);
+//       Alert.alert("Login failed", err.message);
+//     });
+// };
 
   return (
     <View style={styles.container}>
