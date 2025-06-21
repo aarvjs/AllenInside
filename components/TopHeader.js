@@ -1,85 +1,188 @@
-import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+// ===== TopHeader.js =====
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
+  Dimensions,
+} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const TopHeader = () => {
+const screenHeight = Dimensions.get('window').height;
+
+const TopHeader = ({ scrollY }) => {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const [modalVisible, setModalVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+
+  useEffect(() => {
+    if (!scrollY || !scrollY.addListener) return;
+
+    const listenerId = scrollY.addListener(({ value }) => {
+      Animated.timing(translateY, {
+        toValue: value > 20 ? -100 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => scrollY.removeListener(listenerId);
+  }, [scrollY]);
+
+  const closeModal = () => setModalVisible(false);
+
   return (
-    <View style={styles.topBar}>
-      <TouchableOpacity style={styles.menuButton}>
-        <MaterialIcons name="menu" size={28} color="#333" />
-      </TouchableOpacity>
+    <>
+      <Animated.ScrollView style={[styles.wrapper, { transform: [{ translateY }] }]}>
+        <View style={styles.headerWrapper}>
+          <View style={styles.headerContainer}>
+            <View style={styles.profileSection}>
+              <Image source={require('../assets/conn.jpg')} style={styles.profileImage} />
+              <View>
+                <Text style={styles.username}>Arvind Yadav</Text>
+                <TouchableOpacity style={styles.locationBox} onPress={() => setModalVisible(true)}>
+                  <Text style={styles.location}>Kanpur, UP</Text>
+                  <MaterialIcons name="arrow-drop-down" size={18} color="#333" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.iconSection}>
+              <TouchableOpacity style={styles.iconWrapper}>
+                <MaterialIcons name="notifications" size={20} color="black" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.iconWrapper, { marginLeft: 10 }]}>
+                <MaterialIcons name="favorite-border" size={20} color="black" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Animated.ScrollView>
 
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput
-          placeholder="Search..."
-          placeholderTextColor="#999"
-          style={styles.searchBar}
-        />
-      </View>
-
-      <View style={styles.topIcons}>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="notifications" size={24} color="#333" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <MaterialIcons name="shopping-cart" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-    </View>
+      {/* ✅ MODAL: Pure half screen with overlay */}
+      <Modal visible={modalVisible} animationType="fade" transparent>
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.overlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalWrapper}>
+                <View style={styles.modalContainer}>
+                  <View style={styles.modalHeader}>
+                    <TextInput
+                      style={styles.searchBar}
+                      placeholder="Search location..."
+                      placeholderTextColor="#888"
+                      value={searchText}
+                      onChangeText={setSearchText}
+                    />
+                    <TouchableOpacity onPress={closeModal}>
+                      <MaterialIcons name="close" size={24} color="#333" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.modalContent}>
+                    <Text style={{ color: '#777' }}>Map ya Location UI yahan aa sakta hai...</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  wrapper: {},
+  headerWrapper: {
+    backgroundColor: 'blue',
+    paddingTop: 40,
+    paddingBottom: 10,
     paddingHorizontal: 15,
-    justifyContent: 'space-between',
-    marginVertical: 10,
-    backgroundColor: '#fff',
-    paddingTop: 12,
-    paddingBottom: 12,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    marginTop:40,
   },
-  menuButton: {
-    padding: 6,
-  },
-  searchContainer: {
-    flex: 1,
+  headerContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f7',
-    borderRadius: 25,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    marginHorizontal: 15,
-    height: 42,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 10,
   },
-  searchIcon: {
-    marginRight: 8,
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  username: {
+    fontWeight: '800',
+    fontSize: 16,
+    color: '#fff',
+  },
+  locationBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'yellow',
+    paddingHorizontal: 6,
+    borderRadius: 5,
+    marginTop: 2,
+  },
+  location: {
+    color: 'gray',
+    fontSize: 12,
+  },
+  iconSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    backgroundColor: '#f1f1f1',
+    padding: 8,
+    borderRadius: 10,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalWrapper: {
+    width: '100%',
+    height: screenHeight * 0.5,
+    overflow: 'hidden',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: '#fff',
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   searchBar: {
     flex: 1,
-    fontSize: 16,
-    color: '#333',
-    paddingVertical: 6,
+    height: 45,
+    borderBottomWidth: 1,
+    borderBottomColor: '#aaa',
+    paddingHorizontal: 10,
+    marginRight: 10,
   },
-  topIcons: {
-    flexDirection: 'row',
-  },
-  iconButton: {
-    marginLeft: 15,
-    padding: 6,
+  modalContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

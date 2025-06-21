@@ -8,41 +8,40 @@ import {
   Dimensions,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
 
 const Login1 = ({ navigation }) => {
 
 
-    useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: 'AIzaSyCGG4M2JnPuzlio8Kpp7qEBSDRv6wECGpc',
-    });
-  }, []);
+  //   useEffect(() => {
+  //   GoogleSignin.configure({
+  //     webClientId: 'AIzaSyCGG4M2JnPuzlio8Kpp7qEBSDRv6wECGpc',
+  //   });
+  // }, []);
 
-    const handleGoogleSignIn = async () => {
-    try {
-      const { idToken } = await GoogleSignin.signIn();
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const userCred = await auth().signInWithCredential(googleCredential);
-      console.log('✅ Google Sign-In successful');
+  //   const handleGoogleSignIn = async () => {
+  //   try {
+  //     const { idToken } = await GoogleSignin.signIn();
+  //     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+  //     const userCred = await auth().signInWithCredential(googleCredential);
+  //     console.log('✅ Google Sign-In successful');
 
-      // Check if user already linked password
-      const providers = await auth().fetchSignInMethodsForEmail(userCred.user.email);
+  //     const providers = await auth().fetchSignInMethodsForEmail(userCred.user.email);
 
-      if (!providers.includes('password')) {
-        // 🛡️ Link password with Google account
-        const emailCred = auth.EmailAuthProvider.credential(userCred.user.email, password);
-        await userCred.user.linkWithCredential(emailCred);
-        console.log('🔗 Linked Google account with email/password');
-        Alert.alert('Success', 'Google account linked with password');
-      }
+  //     if (!providers.includes('password')) {
+        
+  //       const emailCred = auth.EmailAuthProvider.credential(userCred.user.email, password);
+  //       await userCred.user.linkWithCredential(emailCred);
+  //       console.log('🔗 Linked Google account with email/password');
+  //       Alert.alert('Success', 'Google account linked with password');
+  //     }
 
-      navigation.navigate('Home');
-    } catch (error) {
-      console.log('❌ Google Login Error:', error.message);
-      Alert.alert('Error', error.message);
-    }
-  };
+  //     navigation.navigate('Home');
+  //   } catch (error) {
+  //     console.log('❌ Google Login Error:', error.message);
+  //     Alert.alert('Error', error.message);
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
@@ -73,7 +72,7 @@ const Login1 = ({ navigation }) => {
         <Image source={require('../assets/facebook.png')} style={styles.icon} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={handleGoogleSignIn}>
+      <TouchableOpacity >
         <Image source={require('../assets/google.png')} style={styles.icon} />
       </TouchableOpacity>
 

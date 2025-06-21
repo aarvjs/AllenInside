@@ -15,23 +15,24 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-// import { signInWithEmailAndPassword } from 'firebase/auth';
-// import { auth } from '../firebase';
-import auth from '@react-native-firebase/auth';
+import { supabase } from '../supabaseClient';
+import { useNavigation } from '@react-navigation/native';
 import { Alert } from 'react-native';
+
 
 
 
 
 const { width, height } = Dimensions.get('window');
 
- function Login({ navigation }) {
+ function Login() {
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+
   
-
-
-
 
 
   const stars = Array.from({ length: 20 }, () => ({
@@ -44,6 +45,59 @@ const { width, height } = Dimensions.get('window');
   const handleLogin = () => {
     navigation.navigate('Home');
   };
+
+  // login hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+// const handleLogin = async () => {
+//   if (!email.trim() || !password.trim()) {
+//     Alert.alert('Missing Info', 'Please enter both email and password');
+//     return;
+//   }
+
+//   setLoading(true);
+
+//   try {
+//     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+//       email,
+//       password,
+//     });
+
+//     if (signInError || !signInData.session) {
+//       setLoading(false);
+//       Alert.alert('Login Failed', signInError?.message || 'Invalid credentials');
+//       return;
+//     }
+
+//     const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
+
+//     if (sessionError || !sessionData?.user?.id) {
+//       setLoading(false);
+//       Alert.alert('Session Error', 'Could not fetch user session.');
+//       return;
+//     }
+
+//     const { data: userData, error: fetchError } = await supabase
+//       .from('users')
+//       .select('*')
+//       .eq('id', sessionData.user.id)
+//       .single();
+
+//     if (fetchError) {
+//       Alert.alert('Fetch Error', fetchError.message);
+//     } else {
+//       Alert.alert('Welcome', `Hello, ${userData.name}!`);
+//       navigation.replace('Home');
+//     }
+
+//   } catch (err) {
+//     Alert.alert('Unexpected Error', err.message || 'Something went wrong');
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
+
+ 
 
   const goToRegister = () => {
     navigation.navigate('Registration');
@@ -64,22 +118,6 @@ const { width, height } = Dimensions.get('window');
     });
   }, []);
  
-//   const handleLogin = () => {
-//   console.log("Login button pressed");
-
-//   auth()
-//     .signInWithEmailAndPassword(email, password)
-//     .then(userCred => {
-//       console.log("Firebase login successful");
-//       Alert.alert("Login Successful", "Welcome!");
-//       setTimeout(() => navigation.navigate('Home'), 1500);  // 1.5 second ke baad Home page pe le jayega
-//     })
-//     .catch(err => {
-//       console.log("Login error:", err.message);
-//       Alert.alert("Login failed", err.message);
-//     });
-// };
-
   return (
     <View style={styles.container}>
 
@@ -144,7 +182,8 @@ const { width, height } = Dimensions.get('window');
               placeholderTextColor="#ddd"
               style={styles.input}
               value={email}
-              onChangeText={setEmail}
+        onChangeText={setEmail}
+              
               autoCapitalize="none"
             />
           </View>
@@ -156,7 +195,8 @@ const { width, height } = Dimensions.get('window');
               placeholderTextColor="#ddd"
               style={styles.input}
               value={password}
-              onChangeText={setPassword}
+        onChangeText={setPassword}
+            
               secureTextEntry
             />
           </View>
@@ -165,9 +205,18 @@ const { width, height } = Dimensions.get('window');
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+  style={[styles.loginButton, { backgroundColor: loading ? '#aaa' : '#fff' }]} 
+  onPress={!loading ? handleLogin : null}
+  disabled={loading}
+>
+  <Text style={{ color: 'blue', textAlign: 'center', fontSize: 16 }}>
+    {loading ? 'Logging in...' : 'Login'}
+  </Text>
+</TouchableOpacity>
+
+
+
 
           <TouchableOpacity onPress={goToRegister} style={styles.registerContainer}>
             <Text style={styles.registerText}>Create an Account</Text>

@@ -10,6 +10,11 @@ import Login from './components/Login';
 import Registration from "./components/Registration";
 import Home from './components/Home';
 import AdminDashboard from './components/AdminDashboard';
+// import CretePost from './components/CreatePost';
+import SuggestionDetail from './components/SuggestionDetail';
+import DocumentDetails from './components/Documentdetails';
+
+
 
 const Stack = createNativeStackNavigator();
 
@@ -24,11 +29,10 @@ export default function App() {
         <Stack.Screen name="Registration" component={Registration} options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboard} options={{ headerShown: false }} />
-
+        {/* <Stack.Screen name="CreatePost" component={CretePost} options={{ headerShown: false }} /> */}
+        <Stack.Screen name="SuggestionDetail" component={SuggestionDetail}  options={{headerShown:false}}/>
+        <Stack.Screen name="DocumentDetails" component={DocumentDetails} options={{ headerShown: false }} />
       </Stack.Navigator>
-
-  
-
     </NavigationContainer>
   );
 }
