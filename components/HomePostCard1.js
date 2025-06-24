@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,62 +7,84 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../supabaseClient';
 
 const { width } = Dimensions.get('window');
 const CARD_HEIGHT = 150;
 
-const posts = [
-  {
-    id: 1,
-    userName: 'Arvind Yadav',
-    userAddress: 'Jaunpur, UP',
-    productTitle: 'Bluetooth Speaker',
-    productDescription: 'Powerful sound with deep bass and long battery life.',
-    price: '₹1,799',
-    profileImage: require('../assets/man.jpg'),
-    productImage: require('../assets/AllenLogo.jpeg'),
-  },
-  {
-    id: 2,
-    userName: 'Priya Sharma',
-    userAddress: 'Delhi, India',
-    productTitle: 'Fitness Smartwatch',
-    productDescription: 'Track steps, heart rate, sleep & more in style.',
-    price: '₹2,499',
-    profileImage: require('../assets/man.jpg'),
-    productImage: require('../assets/AllenLogo.jpeg'),
-  },
-];
-
 const PostCard = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          product_name,
+          description,
+          selling_price,
+          image_url,
+          users:users (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(2); // ✅ Only 2 posts
+
+      if (!error && data) {
+        setPosts(data);
+      } else {
+        console.error('Error fetching posts:', error?.message);
+      }
+
+      setLoading(false);
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 20 }} color="#0aada8" />;
+  }
+
   return (
-    <ScrollView style={{backgroundColor:'#fff'}}>
+    <ScrollView style={{ backgroundColor: '#fff' }}>
       {posts.map((item) => (
         <View key={item.id} style={styles.card}>
           {/* Profile Overlap */}
           <View style={styles.profileWrapper}>
-            <Image source={item.profileImage} style={styles.profileImage} />
+            <Image source={require('../assets/man.jpg')} style={styles.profileImage} />
           </View>
 
           {/* Left Section */}
           <View style={styles.leftSection}>
-            <Text style={styles.userName}>{item.userName}</Text>
-            <Text style={styles.userAddress}>{item.userAddress}</Text>
-            <Text style={styles.productTitle}>{item.productTitle}</Text>
+            <Text style={styles.userName}>{item.users?.name || 'Unknown User'}</Text>
+            <Text style={styles.userAddress}>Kanpur, UP</Text>
+            <Text style={styles.productTitle}>{item.product_name}</Text>
             <Text numberOfLines={2} style={styles.productDescription}>
-              {item.productDescription}
+              {item.description}
             </Text>
-            <Text style={styles.price}>{item.price}</Text>
-            <TouchableOpacity>
-              {/* <Text style={styles.moreText}>More</Text> */}
+            <Text style={styles.price}>₹{item.selling_price}</Text>
+
+            {/* ✅ Button to Navigate */}
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('ProductPurchaseDetail', { post: item })}
+            >
+              <Text style={styles.buttonText}>View Purchase</Text>
             </TouchableOpacity>
           </View>
 
           {/* Right Image */}
           <View style={styles.rightImageContainer}>
-            <Image source={item.productImage} style={styles.rightImage} />
+            <Image source={{ uri: item.image_url }} style={styles.rightImage} />
             <TouchableOpacity style={styles.heartIcon}>
               <Icon name="favorite-border" size={20} color="#fff" />
             </TouchableOpacity>
@@ -72,7 +94,6 @@ const PostCard = () => {
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',

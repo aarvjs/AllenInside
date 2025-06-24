@@ -42,58 +42,58 @@ const { width, height } = Dimensions.get('window');
     duration: Math.random() * 5000 + 5000,
   }));
 
-  const handleLogin = () => {
-    navigation.navigate('Home');
-  };
+  // const handleLogin = () => {
+  //   navigation.navigate('Home');
+  // };
 
   // login hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
-// const handleLogin = async () => {
-//   if (!email.trim() || !password.trim()) {
-//     Alert.alert('Missing Info', 'Please enter both email and password');
-//     return;
-//   }
+const handleLogin = async () => {
+  if (!email.trim() || !password.trim()) {
+    Alert.alert('Missing Info', 'Please enter both email and password');
+    return;
+  }
 
-//   setLoading(true);
+  setLoading(true);
 
-//   try {
-//     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-//       email,
-//       password,
-//     });
+  try {
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-//     if (signInError || !signInData.session) {
-//       setLoading(false);
-//       Alert.alert('Login Failed', signInError?.message || 'Invalid credentials');
-//       return;
-//     }
+    if (signInError || !signInData.session) {
+      setLoading(false);
+      Alert.alert('Login Failed', signInError?.message || 'Invalid credentials');
+      return;
+    }
 
-//     const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
+    const { data: sessionData, error: sessionError } = await supabase.auth.getUser();
 
-//     if (sessionError || !sessionData?.user?.id) {
-//       setLoading(false);
-//       Alert.alert('Session Error', 'Could not fetch user session.');
-//       return;
-//     }
+    if (sessionError || !sessionData?.user?.id) {
+      setLoading(false);
+      Alert.alert('Session Error', 'Could not fetch user session.');
+      return;
+    }
 
-//     const { data: userData, error: fetchError } = await supabase
-//       .from('users')
-//       .select('*')
-//       .eq('id', sessionData.user.id)
-//       .single();
+    const { data: userData, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', sessionData.user.id)
+      .single();
 
-//     if (fetchError) {
-//       Alert.alert('Fetch Error', fetchError.message);
-//     } else {
-//       Alert.alert('Welcome', `Hello, ${userData.name}!`);
-//       navigation.replace('Home');
-//     }
+    if (fetchError) {
+      Alert.alert('Fetch Error', fetchError.message);
+    } else {
+      Alert.alert('Welcome', `Hello, ${userData.name}!`);
+      navigation.replace('Home');
+    }
 
-//   } catch (err) {
-//     Alert.alert('Unexpected Error', err.message || 'Something went wrong');
-//   } finally {
-//     setLoading(false);
-//   }
-// };
+  } catch (err) {
+    Alert.alert('Unexpected Error', err.message || 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
 

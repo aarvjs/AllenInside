@@ -5,12 +5,10 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
-  Platform,
   TouchableOpacity,
   Animated,
   FlatList,
   Image,
-  
 } from 'react-native';
 
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -22,22 +20,21 @@ import SearchBar from '../components/ExploreSearch';
 
 const AnimatedMaterialIcons = Animated.createAnimatedComponent(MaterialIcons);
 
-
-
-const ExploreScreen = ({ tabOffset }) => {
+  const ExploreScreen = ({ tabOffset = new Animated.Value(0) }) => {
   const [search, setSearch] = useState('');
   const scrollY = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const prevScrollY = useRef(0);
 
- const categories = [
-  { id: '1', label: 'Mobiles', image: require('../assets/logo.jpeg') },
-  { id: '2', label: 'Rooms', image: require('../assets/logo.jpeg') },
-  { id: '3', label: 'Cars', image: require('../assets/conn.jpg') },
-  { id: '4', label: 'Bikes', image: require('../assets/event.jpg') },
-  { id: '5', label: 'Notes', image: require('../assets/collg.jpg') },
-  { id: '6', label: 'Stationery', image: require('../assets/man.jpg') },
-];
-
+  const categories = [
+    { id: '1', label: 'Mobiles', image: require('../assets/logo.jpeg') },
+    { id: '2', label: 'Rooms', image: require('../assets/logo.jpeg') },
+    { id: '3', label: 'Cars', image: require('../assets/conn.jpg') },
+    { id: '4', label: 'Bikes', image: require('../assets/event.jpg') },
+    { id: '5', label: 'Notes', image: require('../assets/collg.jpg') },
+    { id: '6', label: 'Stationery', image: require('../assets/man.jpg') },
+  ];
 
   const suggestions = [
     {
@@ -60,55 +57,15 @@ const ExploreScreen = ({ tabOffset }) => {
       category: 'Mobiles',
       location: 'Kanpur,UP',
       price: '₹2000',
-      description: 'This is a great product n nvmsdr bfvEKJBFRHJEBFAHSEBCKHFAEBHRFVHJVA REAHFVG ADYVRAHVCAHRDVCBDFHBGYREHGGAERHJVBYRGBYUERBVHUARBVYEGRYRFVGRUABVRyG...',
-
+      description: 'Like new iPhone in great condition',
       productImage: [
         'https://images.unsplash.com/photo-1607746882042-944635dfe10e',
         'https://images.pexels.com/photos/3993444/pexels-photo-3993444.jpeg',
-        'https://images.pexels.com/photos/6568531/pexels-photo-6568531.jpeg'
-      ]
-
-    },
-
-    {
-      id: '3',
-      username: 'Ravi',
-      profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-      productTitle: 'PG Room near University',
-      type: 'Rent',
-      category: 'Mobiles',
-      location: 'Kanpur',
-      price: '₹2000',
-      description: 'This is a great product...',
-    },
-  ];
-
-  const postsData = [
-    {
-      id: 1,
-      user: 'Ayushhh Yadav',
-      location: 'Kanpur, UP',
-      images: [
-        'https://picsum.photos/seed/project1/600/400',
-        'https://picsum.photos/seed/design/300/200',
-        'https://picsum.photos/seed/room/300/200',
+        'https://images.pexels.com/photos/6568531/pexels-photo-6568531.jpeg',
       ],
-      title: 'Final Year Project Help',
-      description: 'React + Firebase based college project. UI ready.',
-      price: '₹1500',
-    },
-    {
-      id: 2,
-      user: 'Ayush Yadav',
-      location: 'Lucknow, UP',
-      image: 'https://picsum.photos/seed/room/300/200',
-      title: 'Rent Room Available',
-      description: '2BHK furnished flat near SGPGI. AC + WiFi included.',
-      price: '₹3500',
     },
   ];
 
-  // Animate header color and text color on scroll
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 20],
     outputRange: ['transparent', '#007bff'],
@@ -120,57 +77,39 @@ const ExploreScreen = ({ tabOffset }) => {
     outputRange: ['#000', '#fff'],
     extrapolate: 'clamp',
   });
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event) => {
+        const currentY = event.nativeEvent.contentOffset.y;
+        const diff = currentY - prevScrollY.current;
 
+        if (diff > 5) {
+          Animated.timing(tabOffset, {
+            toValue: 100,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        } else if (diff < -5) {
+          Animated.timing(tabOffset, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
 
-  // const scrollY = useRef(new Animated.Value(0)).current;
-    const prevScrollY = useRef(0);
-  
-    const handleScroll = Animated.event(
-      [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-      {
-        useNativeDriver: true,
-        listener: (event) => {
-          const currentY = event.nativeEvent.contentOffset.y;
-          const diff = currentY - prevScrollY.current;
-  
-          if (diff > 5) {
-            // Scroll down → Hide tab bar
-            Animated.timing(tabOffset, {
-              toValue: 100,
-              duration: 200,
-              useNativeDriver: true,
-            }).start();
-          } else if (diff < -5) {
-            // Scroll up → Show tab bar
-            Animated.timing(tabOffset, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }).start();
-          }
-  
-          prevScrollY.current = currentY;
-        },
-      }
-    );
+        prevScrollY.current = currentY;
+      },
+    }
+  );
 
   return (
-
-
     <SafeAreaView style={styles.container}>
-      <Animated.ScrollView
-       onScroll={handleScroll}
-      scrollEventThrottle={16}
-      showsVerticalScrollIndicator={false}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* 🔝 Animated Header */}
+      {/* Header */}
       <Animated.View style={[styles.fixedHeader, { backgroundColor: headerBackgroundColor }]}>
         <View style={styles.leftContainer}>
           <AnimatedMaterialIcons
@@ -179,89 +118,58 @@ const ExploreScreen = ({ tabOffset }) => {
             style={{ color: headerTextColor }}
             onPress={() => navigation.goBack()}
           />
-          <Animated.Text style={[styles.title, { color: headerTextColor }]}>
-            Explore
-          </Animated.Text>
+          <Animated.Text style={[styles.title, { color: headerTextColor }]}>Explore</Animated.Text>
         </View>
-        <View style={{ width: 28 }} /> {/* Spacer on the right */}
+        <View style={{ width: 28 }} />
       </Animated.View>
 
-
-      {/* 🔄 Scrollable Content */}
-      <Animated.FlatList
-        data={[...postsData.slice(0, 1), 'SUGGESTIONS', ...postsData.slice(1)]}
-        keyExtractor={(item, index) =>
-          typeof item === 'string' ? `suggestions-${index}` : item.id.toString()
-        }
-        ListHeaderComponent={
-          <>
-            {/* 🔍 Search & Gradient Block */}
-            <LinearGradient
-              colors={['#007bff', '#ffffff']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.gradientContainer}
-            >
-              <View style={{ height: 60 }} />
-              <SearchBar search={search} setSearch={setSearch} />
-            </LinearGradient>
-
-            {/* 🏷 Categories */}
-<View style={styles.categoryBox}>
-  <FlatList
-    data={categories}
-    keyExtractor={(item) => item.id}
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.categoryRow}
-    renderItem={({ item }) => {
-      const isSelected = selectedCategory === item.label;
-      return (
-        <TouchableOpacity
-          style={[styles.categoryItem, isSelected && styles.categorySelected]}
-          onPress={() => setSelectedCategory(item.label)}
-        >
-         <Image
-  source={item.image}
-  style={[
-    styles.iconImage,
-    isSelected ? {} : { tintColor: undefined },
-  ]}
-  resizeMode="contain"
-/>
-
-          <Text style={[styles.categoryText, isSelected && { color: '#fff' }]}>
-            {item.label}
-          </Text>
-        </TouchableOpacity>
-      );
-    }}
-  />
-</View>
-
-
-          </>
-        }
-        renderItem={({ item }) => {
-          if (item === 'SUGGESTIONS') {
-            return <Suggestions suggestions={suggestions} />;
-          } else {
-            return (
-              <VerticalPostCard
-                post={item}
-                onPress={() => navigation.navigate('PostDetail', { post: item })}
-              />
-            );
-          }
-        }}
+      {/* Scrollable Top Part Only */}
+      <Animated.ScrollView
         contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
-      />
+      >
+        <LinearGradient
+          colors={['#007bff', '#ffffff']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.gradientContainer}
+        >
+          <View style={{ height: 60 }} />
+          <SearchBar search={search} setSearch={setSearch} />
+        </LinearGradient>
+
+        {/* Categories */}
+        <View style={styles.categoryBox}>
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryRow}
+            renderItem={({ item }) => {
+              const isSelected = selectedCategory === item.label;
+              return (
+                <TouchableOpacity
+                  style={[styles.categoryItem, isSelected && styles.categorySelected]}
+                  onPress={() => setSelectedCategory(item.label)}
+                >
+                  <Image source={item.image} style={styles.iconImage} resizeMode="contain" />
+                  <Text style={[styles.categoryText, isSelected && { color: '#fff' }]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+
+        {/* Suggestions */}
+        <Suggestions suggestions={suggestions} />
+
+        {/* ✅ Supabase Posts Section */}
+        <VerticalPostCard />
       </Animated.ScrollView>
     </SafeAreaView>
   );
@@ -270,7 +178,7 @@ const ExploreScreen = ({ tabOffset }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    // backgroundColor: '#f9f9f9',
     // paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     borderBottomEndRadius: 30,
   },

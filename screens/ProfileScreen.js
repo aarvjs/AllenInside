@@ -16,6 +16,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import SettingDetailsCard from '../components/SettingDetailsCard';
 import { supabase } from "../supabaseClient";
+import { Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -27,7 +28,47 @@ const ProfileScreen = ({ tabOffset }) => {
   const [name, setName] = useState('');
 const [email, setEmail] = useState('');
 const [loading, setLoading] = useState(true);
+const [posts, setPosts] = useState([]);
+  const [userId, setUserId] = useState(null);
+  // const [loading, setLoading] = useState(true);
 
+
+   // Fetch user and posts====================================================================================
+  //  ================================================================================================ 
+ useEffect(() => {
+  const fetchData = async () => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (!user || error) return;
+
+    setUserId(user.id);
+
+    const { data: postData, error: postError } = await supabase
+      .from('posts')
+      .select('*, users(name, username)') // ✅ JOIN with users
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!postError && postData) {
+      setPosts(postData);
+    }
+
+    setLoading(false);
+  };
+
+  fetchData();
+}, []);
+
+
+const handlePostDelete = (deletedId) => {
+  setPosts(prev => prev.filter(post => post.id !== deletedId));
+};
+
+  // Fetch user and posts====================================================================================
+  //  ================================================================================================ 
 
 
   const handleToggleModal = () => setVisible(!visible);
@@ -81,6 +122,41 @@ useEffect(() => {
 }, []);
 
 // profile eneddddddddddddddddd data hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+// deleted acount start hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee 
+const handleDeleteAccount = async () => {
+  const {
+    data: { user },
+    error: sessionError,
+  } = await supabase.auth.getUser();
+
+  if (sessionError || !user) {
+    alert('Not logged in.');
+    return;
+  }
+
+  // ⚠️ Step 1: Delete from your custom "users" table
+  const { error: deleteUserError } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', user.id);
+
+  if (deleteUserError) {
+    alert('Failed to delete user data: ' + deleteUserError.message);
+    return;
+  }
+
+  // ⚠️ Step 2: Delete from Supabase Auth
+  const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(user.id);
+
+  if (deleteAuthError) {
+    alert('Failed to delete auth user: ' + deleteAuthError.message);
+    return;
+  }
+
+  alert('Account deleted successfully.');
+};
+
+// deleted account hereeeeeeeeeeeeeeeeeeeeeeeeeeeee enddddddddddddddddddddddddddd 
 
 
 
@@ -96,7 +172,7 @@ useEffect(() => {
   };
 
  const settingsItems = [
-  { title: 'Account', icon: 'person' },
+  { title: 'History', icon: 'person' },
   { title: 'Notifications', icon: 'notifications' },
   { title: 'Privacy Policy', icon: 'privacy-tip' },
   { title: 'Security', icon: 'security' },
@@ -150,6 +226,9 @@ const closeSettingCard = () => {
       },
     }
   );
+
+
+  
 
   return (
     <Animated.ScrollView
@@ -236,15 +315,21 @@ const closeSettingCard = () => {
 
 {/* all post show hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee */}
 
-      <View style={styles.tabBar}>
-        {['all', 'videos', 'images'].map((tab, idx) => (
+    <View style={styles.tabBar}>
+        {['all', 'videos', 'images'].map((tab, index) => (
           <TouchableOpacity
             key={tab}
             onPress={() => handleTabChange(tab)}
             style={styles.tabButton}
           >
             <MaterialIcons
-              name={tab === 'all' ? 'grid-on' : tab === 'videos' ? 'video-library' : 'photo-library'}
+              name={
+                tab === 'all'
+                  ? 'grid-on'
+                  : tab === 'videos'
+                  ? 'video-library'
+                  : 'photo-library'
+              }
               size={24}
               color={activeTab === tab ? '#000' : '#aaa'}
             />
@@ -253,52 +338,41 @@ const closeSettingCard = () => {
         <Animated.View style={[styles.underline, { left: underlineAnim }]} />
       </View>
 
- <View style={styles.contentArea}>
-  <ScrollView contentContainerStyle={styles.dynamicContent}>
-    {activeTab === 'all' && (
-      <View style={styles.gridWrapper}>
-        {[...Array(12)].map((_, i) => (
-          <View key={i} style={styles.gridCard}>
-            <ImageBackground
-              source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' }}
-              style={styles.cardImage}
-              imageStyle={{ borderRadius: 8 }}
-            />
-            <Text style={styles.cardText}>Post #{i + 1}</Text>
-          </View>
-        ))}
-      </View>
-    )}
-
-    {activeTab === 'videos' && (
-      <View style={styles.listWrapper}>
-        {[...Array(5)].map((_, i) => (
-          <View key={i} style={styles.articleCard}>
-            <Text style={styles.articleTitle}>Article Title #{i + 1}</Text>
-            <Text style={styles.articleContent}>
-              This is a short summary of the article post number {i + 1}.
-            </Text>
-          </View>
-        ))}
-      </View>
-    )}
-
-    {activeTab === 'images' && (
-      <View style={styles.gridWrapper}>
-        {[...Array(9)].map((_, i) => (
-          <View key={i} style={styles.gridCard}>
-            <ImageBackground
-              source={{ uri: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e' }}
-              style={styles.cardImage}
-              imageStyle={{ borderRadius: 8 }}
-            />
-            <Text style={styles.cardText}>Image #{i + 1}</Text>
-          </View>
-        ))}
-      </View>
-    )}
-  </ScrollView>
+      {/* Content */}
+      <View style={styles.contentArea}>
+        <ScrollView contentContainerStyle={styles.dynamicContent}>
+          {activeTab !== 'videos' ? (
+          <View style={styles.gridWrapper}>
+  {loading ? (
+    <Text>Loading...</Text>
+  ) : posts.length > 0 ? (
+    posts.map((post, i) => (
+      <TouchableOpacity
+        key={i}
+        onPress={() => navigation.navigate('PostProfileEdit', { post,onDelete: handlePostDelete })}
+      >
+        <View style={styles.gridCard}>
+          <ImageBackground
+            source={{ uri: post.image_url || 'https://via.placeholder.com/150' }}
+            style={styles.cardImage}
+            imageStyle={{ borderRadius: 8 }}
+          />
+          <Text style={styles.cardText}>{post.product_name || 'No Title'}</Text>
+        </View>
+      </TouchableOpacity>
+    ))
+  ) : (
+    <Text>No posts found</Text>
+  )}
 </View>
+
+          ) : (
+            <View style={styles.gridWrapper}>
+              <Text style={styles.noPostText}>Video posts coming soon...</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
 {/* end hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee  */}
 
       <Modal transparent visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
@@ -316,6 +390,25 @@ const closeSettingCard = () => {
                 <TouchableOpacity style={styles.modalItem}>
                   <Text style={styles.modalText}>Share Profile</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+  style={styles.modalItem}
+  onPress={() => {
+    Alert.alert(
+      'Delete Account',
+      'Your account and all your posts will be permanently deleted. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'OK',
+          onPress: () => handleDeleteAccount(),
+        },
+      ],
+      { cancelable: true }
+    );
+  }}
+>
+  <Text style={styles.modalText}>Delete Account</Text>
+</TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -382,23 +475,25 @@ leftIcon: {
   },
 
 
-dynamicContent: {
-  paddingHorizontal: 12,
-  paddingBottom: 20,
-  marginTop:10,
-},
+// dynamicContent: {
+//   paddingHorizontal: 12,
+//   paddingBottom: 20,
+//   marginTop:10,
+// },
 
 gridWrapper: {
   flexDirection: 'row',
   flexWrap: 'wrap',
-  justifyContent: 'space-between',
+  // justifyContent: 'space-between',
+  gap:10,
+  // paddingHorizontal: 10,
 },
 
 gridCard: {
-  width: '31.5%', // 3 in a row with spacing
-  marginBottom: 12,
-  backgroundColor: '#fff',
-  borderRadius: 10,
+  width: (width - 40) / 3, // 3 cards per row with padding
+  marginBottom: 15,
+  backgroundColor: '#f9f9f9',
+  borderRadius: 8,
   overflow: 'hidden',
   elevation: 2,
 },
@@ -406,13 +501,22 @@ gridCard: {
 cardImage: {
   width: '100%',
   height: 90,
+  resizeMode: 'cover',
 },
 
 cardText: {
-  fontSize: 13,
   textAlign: 'center',
-  paddingVertical: 6,
+  fontSize: 12,
+  paddingVertical: 4,
+  fontWeight: '600',
   color: '#333',
+},
+
+noPostText: {
+  textAlign: 'center',
+  fontSize: 16,
+  color: '#888',
+  marginTop: 20,
 },
 
 listWrapper: {
@@ -420,24 +524,24 @@ listWrapper: {
   gap: 10,
 },
 
-articleCard: {
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  padding: 15,
-  marginBottom: 12,
-  elevation: 2,
-},
+// articleCard: {
+//   backgroundColor: '#fff',
+//   borderRadius: 10,
+//   padding: 15,
+//   marginBottom: 12,
+//   elevation: 2,
+// },
 
-articleTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginBottom: 5,
-},
+// articleTitle: {
+//   fontSize: 16,
+//   fontWeight: 'bold',
+//   marginBottom: 5,
+// },
 
-articleContent: {
-  fontSize: 14,
-  color: '#666',
-},
+// articleContent: {
+//   fontSize: 14,
+//   color: '#666',
+// },
 
 
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' },

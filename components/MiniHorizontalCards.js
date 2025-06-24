@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,83 +6,94 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { supabase } from '../supabaseClient';
+import { useNavigation } from '@react-navigation/native';
 
-const data = [
-  {
-    id: 1,
-    user: 'Arvind',
-    profile: 'https://randomuser.me/api/portraits/men/32.jpg',
-    productName: 'Figma UI Kit',
-    price: '₹499',
-    image: 'https://images.pexels.com/photos/4065899/pexels-photo-4065899.jpeg',
-  },
-  {
-    id: 2,
-    user: 'Riya',
-    profile: 'https://randomuser.me/api/portraits/women/45.jpg',
-    productName: 'Web Template',
-    price: '₹799',
-    image: 'https://images.pexels.com/photos/270404/pexels-photo-270404.jpeg',
-  },
-  {
-    id: 3,
-    user: 'Shyam',
-    profile: 'https://randomuser.me/api/portraits/men/76.jpg',
-    productName: 'Room Rent',
-    price: '₹3500',
-    image: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg',
-  },
-    {
-    id: 4,
-    user: 'Shyam',
-    profile: 'https://randomuser.me/api/portraits/men/76.jpg',
-    productName: 'Room Rent',
-    price: '₹3500',
-    image: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg',
-  },
-];
 
 const MiniHorizontalCards = () => {
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState([]);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchDeals = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          id,
+          product_name,
+          selling_price,
+          image_url,
+          users:users (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching deals:', error.message);
+      } else {
+        setDeals(data);
+      }
+      setLoading(false);
+    };
+
+    fetchDeals();
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator style={{ marginTop: 20 }} color="#0aada8" />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.headerText}>Popular Deals</Text>
-        <TouchableOpacity style={styles.viewAllButton}>
+        <TouchableOpacity style={styles.viewAllButton} >
           <Text style={styles.viewAllText}>View All</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {data.map((item) => (
-          <View key={item.id} style={styles.card}>
-            <View style={styles.imageWrapper}>
-              <Image source={{ uri: item.image }} style={styles.cardImage} />
-              <TouchableOpacity style={styles.heartIcon}>
-                <MaterialIcons name="favorite-border" size={14} color="#fff" />
-              </TouchableOpacity>
-            </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
+  {deals.map((post) => (
+    <TouchableOpacity
+      key={post.id}
+      style={styles.card}
+      onPress={() => navigation.navigate('ProductPurchaseDetail', { post })}
+    >
+      <View style={styles.imageWrapper}>
+        <Image source={{ uri: post.image_url }} style={styles.cardImage} />
+        <TouchableOpacity style={styles.heartIcon}>
+          <MaterialIcons name="favorite-border" size={14} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-            <View style={styles.cardInfo}>
-              <View style={styles.profileRow}>
-                <View style={styles.profileInfo}>
-                  <Image source={{ uri: item.profile }} style={styles.profileImage} />
-                  <Text style={styles.username}>{item.user}</Text>
-                </View>
-                <TouchableOpacity style={styles.moreIcon}>
-                  <MaterialIcons name="more-vert" size={14} color="#000" />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.productName}>{item.productName}</Text>
-              <View style={styles.separator} />
-              <Text style={styles.price}>{item.price}</Text>
-            </View>
+      <View style={styles.cardInfo}>
+        <View style={styles.profileRow}>
+          <View style={styles.profileInfo}>
+            <Image source={require('../assets/logo.jpeg')} style={styles.profileImage} />
+            <Text style={styles.username}>{post.users?.name || 'Unknown'}</Text>
           </View>
-        ))}
-      </ScrollView>
+          <TouchableOpacity style={styles.moreIcon}>
+            <MaterialIcons name="more-vert" size={14} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.productName}>{post.product_name}</Text>
+        <View style={styles.separator} />
+        <Text style={styles.price}>₹{post.selling_price}</Text>
+      </View>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
+
     </View>
   );
 };

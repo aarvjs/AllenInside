@@ -8,7 +8,9 @@ import MiniHorizontalCards from '../components/MiniHorizontalCards';
 import Slider from '../components/Slider';
 import PostCard from '../components/HomePostCard1';
 import MembershipSlider from '../components/MembershipSlider';
+import { useNavigation } from '@react-navigation/native';
 const HomeScreen = ({ tabOffset }) => {
+ 
    const scrollY = useRef(new Animated.Value(0)).current;
   const prevScrollY = useRef(0);
 
@@ -41,6 +43,9 @@ const HomeScreen = ({ tabOffset }) => {
     }
   );
 
+
+   const navigation = useNavigation();
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff',
       
@@ -61,7 +66,8 @@ const HomeScreen = ({ tabOffset }) => {
         
         <View style={styles.postHeaderRow}>
           <Text style={styles.postHeader}>Featured Listings</Text>
-          <TouchableOpacity style={styles.viewAllButton}>
+          <TouchableOpacity style={styles.viewAllButton}
+          onPress={() => navigation.navigate('ExploreScreen', { tabOffset })}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>

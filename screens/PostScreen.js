@@ -1,19 +1,5 @@
-import React, { useCallback, useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  Dimensions,
-  ActionSheetIOS,
-  Platform,
-  UIManager,
-  FlatList,
-} from 'react-native';
+import React, { useCallback, useState, useRef ,useEffect} from 'react';
+import { View, Text, StyleSheet, Image, Alert, ScrollView, TouchableOpacity, Modal, Dimensions, ActionSheetIOS, Platform, UIManager, FlatList,ActivityIndicator,BackHandler  } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -29,6 +15,7 @@ if (Platform.OS === 'android') {
 
 const PostScreen = () => {
   const [imageUris, setImageUris] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [modalCurrentIndex, setModalCurrentIndex] = useState(0);
@@ -40,7 +27,6 @@ const PostScreen = () => {
 
   const scrollRef = useRef();
   const modalScrollRef = useRef();
-  const menuRefs = useRef([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -51,32 +37,56 @@ const PostScreen = () => {
     }, [])
   );
 
-  const openGallery = async () => {
+ const openGallery = async () => {
     try {
+      setIsLoading(true);
+
       const response = await launchImageLibrary({
         mediaType: 'photo',
         selectionLimit: 0,
         includeBase64: true,
       });
 
-      if (response.didCancel) return;
+      if (response.didCancel) {
+        // Immediately navigate home when back is pressed
+        navigation.navigate('Home');
+        return;
+      }
+
       if (response.assets?.length > 0) {
         const uris = response.assets.map((asset) => asset.uri);
         setImageUris(uris);
       } else {
         Alert.alert('No images selected');
+        navigation.navigate('Home'); // Also navigate home if no images selected
       }
     } catch (error) {
       console.error('Image picker error:', error);
       Alert.alert('Error', 'Failed to select images');
-    }
-  };
+      navigation.navigate('Home'); // Navigate home on error too
+    } finally {
+      setIsLoading(false);
+}
+};
 
   const handleScroll = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / (width - 40));
     setCurrentIndex(index);
   };
+  useEffect(() => {
+    const backAction = () => {
+      navigation.navigate('Home'); 
+      return true; 
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove(); 
+  }, [navigation]);
 
   const handleModalScroll = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -88,7 +98,7 @@ const PostScreen = () => {
     setCurrentIndex(index);
     setModalCurrentIndex(index);
     setModalVisible(true);
-    
+
     Image.getSize(uri, (imgWidth, imgHeight) => {
       const isPortrait = imgHeight > imgWidth;
       setModalHeight(isPortrait ? height * 0.85 : height * 0.4);
@@ -98,7 +108,7 @@ const PostScreen = () => {
 
   const showActionSheet = (index) => {
     setSelectedMenuIndex(index);
-    
+
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
@@ -115,7 +125,7 @@ const PostScreen = () => {
 
   const handleMenuAction = (buttonIndex, index) => {
     setMenuVisible(false);
-    
+
     switch (buttonIndex) {
       case 1:
         deleteImage(index);
@@ -135,7 +145,7 @@ const PostScreen = () => {
     const newImages = [...imageUris];
     newImages.splice(index, 1);
     setImageUris(newImages);
-    
+
     if (newImages.length === 0) {
       setModalVisible(false);
     } else if (index === currentIndex) {
@@ -157,9 +167,9 @@ const PostScreen = () => {
   const renderImageItem = ({ item, index }) => (
     <View style={styles.imageContainer}>
       <TouchableOpacity onPress={() => handleImagePress(item, index)}>
-        <Image 
-          source={{ uri: item }} 
-          style={styles.sliderImage} 
+        <Image
+          source={{ uri: item }}
+          style={styles.sliderImage}
           resizeMode="cover"
         />
       </TouchableOpacity>
@@ -185,10 +195,26 @@ const PostScreen = () => {
 
   return (
     <View style={styles.container}>
+      {isLoading && (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text style={styles.loadingText}>Loading images...</Text>
+      </View>
+    )}
       <ScrollView contentContainerStyle={styles.scrollArea}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>Create a Post</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('DocumentDetails')}>
+          <TouchableOpacity
+            onPress={() => {
+              if (imageUris.length === 0) {
+                Alert.alert('No Images', 'Please select at least one image');
+                return;
+              }
+              navigation.navigate('DocumentDetails', {
+                firstImage: imageUris[0],
+              });
+            }}
+          >
             <Text style={styles.nextText}>Next</Text>
           </TouchableOpacity>
         </View>
@@ -245,20 +271,20 @@ const PostScreen = () => {
                 index,
               })}
             />
-            
+
             <View style={styles.modalCounterContainer}>
               <Text style={styles.modalCounterText}>
                 {modalCurrentIndex + 1} / {imageUris.length}
               </Text>
             </View>
-            
+
             <TouchableOpacity
               style={styles.floatingCloseIcon}
               onPress={() => setModalVisible(false)}
             >
               <Icon name="close" size={28} color="#fff" />
             </TouchableOpacity>
-            
+
             {modalCurrentIndex > 0 && (
               <TouchableOpacity
                 style={styles.navArrowLeft}
@@ -272,7 +298,7 @@ const PostScreen = () => {
                 <Icon name="chevron-left" size={36} color="#fff" />
               </TouchableOpacity>
             )}
-            
+
             {modalCurrentIndex < imageUris.length - 1 && (
               <TouchableOpacity
                 style={styles.navArrowRight}
@@ -293,25 +319,25 @@ const PostScreen = () => {
       {menuVisible && Platform.OS === 'android' && (
         <View style={styles.androidMenuContainer}>
           <View style={styles.androidMenu}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuAction(1, selectedMenuIndex)}
             >
               <Text style={styles.menuItemText}>Delete Image</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuAction(2, selectedMenuIndex)}
             >
               <Text style={styles.menuItemText}>Crop Image</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => handleMenuAction(3, selectedMenuIndex)}
             >
               <Text style={[styles.menuItemText, styles.destructiveText]}>Delete All</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuItem}
               onPress={() => setMenuVisible(false)}
             >
@@ -466,6 +492,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 30,
     padding: 8,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

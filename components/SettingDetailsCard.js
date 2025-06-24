@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,27 +7,127 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { supabase } from '../supabaseClient';
+import { useNavigation } from '@react-navigation/native';
 
 const SettingDetailsCard = ({ visible, onClose, title }) => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+
+
+ useEffect(() => {
+  const fetchNotifications = async () => {
+    if (title === 'Notifications') {
+      setLoading(true);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setPosts(data);
+      }
+
+      setLoading(false);
+    }
+  };
+
+  fetchNotifications();
+}, [title]);
+
+
+
+  // Fetch user's posts from Supabase
+  useEffect(() => {
+    const fetchPosts = async () => {
+      if (title === 'History') {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('posts')
+          .select('product_name, selling_price, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setPosts(data);
+        }
+
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [title]);
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  };
+
   const renderContent = () => {
     switch (title) {
-      case 'Account':
+      case 'History':
         return (
           <>
-            <Text style={styles.subTitle}>Your Account Info</Text>
-            <Text style={styles.detailText}>Email: arvind@gmail.com</Text>
-            <Text style={styles.detailText}>Username: arvind_dev</Text>
+            <Text style={styles.subTitle}>Your Posts Payment</Text>
+            {loading ? (
+              <ActivityIndicator color="#0aada8" size="small" />
+            ) : posts.length > 0 ? (
+              posts.map((post, index) => (
+                <View key={index} style={styles.row}>
+                  <Text style={styles.product}>{post.product_name}</Text>
+                  <Text style={styles.price}>₹{post.selling_price}</Text>
+                  <Text style={styles.date}>{formatDate(post.created_at)}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.detailText}>No purchased posts found.</Text>
+            )}
           </>
         );
-      case 'Notifications':
-        return (
-          <>
-            <Text style={styles.subTitle}>Notification Settings</Text>
-            <Text style={styles.detailText}>You’ll receive updates for comments and likes.</Text>
-          </>
-        );
+    case 'Notifications':
+  return (
+    <>
+      <Text style={styles.subTitle}>Your Notifications</Text>
+
+      {loading ? (
+        <ActivityIndicator color="#0aada8" size="small" />
+      ) : posts.length > 0 ? (
+        posts.map((note, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.row}
+            onPress={() => {
+              if (note.metadata) {
+                navigation.navigate('PurchaseDetails', { data: note.metadata });
+              }
+            }}
+          >
+            <Text style={styles.product}>{note.message}</Text>
+            <Text style={styles.date}>{formatDate(note.created_at)}</Text>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <Text style={styles.detailText}>No notifications yet.</Text>
+      )}
+    </>
+  );
+
       case 'Privacy Policy':
         return (
           <>
@@ -123,7 +223,7 @@ const styles = StyleSheet.create({
   subTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 10,
+    marginBottom: 12,
     color: '#444',
   },
   detailText: {
@@ -141,6 +241,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     marginBottom: 10,
   },
+   row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fefefe',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  product: {
+    fontSize: 15,
+    fontWeight: '600',
+    flex: 1.5,
+    color: '#222',
+  },
+  price: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0aada8',
+    textAlign: 'center',
+    flex: 1,
+  },
+  date: {
+    fontSize: 12,
+    color: '#888',
+    opacity: 0.8,
+    flex: 1.2,
+    textAlign: 'right',
+  },
+
 });
 
 export default SettingDetailsCard;

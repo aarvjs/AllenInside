@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,79 +11,121 @@ import {
   Platform,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Categories from '../components/Categories';
-
-const posts = [
-  {
-    id: 1,
-    user: 'Arvind Yadav',
-    location: 'Kanpur, UP',
-    image: 'https://picsum.photos/seed/project/300/200',
-    title: 'Final Year Project Help',
-    description: 'React + Firebase based college project. UI ready.',
-    price: '₹1500',
-  },
-  {
-    id: 2,
-    user: 'Ayush Yadav',
-    location: 'Lucknow, UP',
-    image: 'https://picsum.photos/seed/room/300/200',
-    title: 'Rent Room Available',
-    description: '2BHK furnished flat near SGPGI. AC + WiFi included.',
-    price: '₹3500',
-  },
-  {
-    id: 3,
-    user: 'Aarvjs',
-    location: 'Noida, UP',
-    image: 'https://picsum.photos/seed/design/300/200',
-    title: 'App UI Design',
-    description: 'Figma mobile UI for eCommerce app - fast delivery.',
-    price: '₹999',
-  },
-];
+import { supabase } from '../supabaseClient';
+import { useNavigation } from '@react-navigation/native';
 
 const VerticalPostCard = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select(`
+            id,
+            product_name,
+            description,
+            selling_price,
+            image_url,
+            created_at,
+            users:users (
+              name,
+              username
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Supabase fetch error:', error.message);
+        } else {
+          // Fix: Remove duplicates based on post id
+          const uniquePosts = Array.from(new Map(data.map(item => [item.id, item])).values());
+          setPosts(uniquePosts);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err.message || err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  const truncateDescription = (desc, wordLimit = 20) => {
+    const words = desc.trim().split(' ');
+    if (words.length > wordLimit) {
+      return words.slice(0, wordLimit).join(' ') + '...more';
+    }
+    return desc;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f9f9f9" />
-      {/* <Categories/> */}
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {posts.map(post => (
-          <View key={post.id} style={styles.postCard}>
-            {/* Top User Info */}
-            <View style={styles.userInfo}>
-              <View style={styles.userLeft}>
-                <Image source={require('../assets/conn.jpg')} style={styles.userImage} />
-                <View>
-                  <Text style={styles.username}>{post.user}</Text>
-                  <Text style={styles.userLocation}>{post.location}</Text>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        {loading ? (
+          <Text style={styles.loadingText}>Loading posts...</Text>
+        ) : posts.length === 0 ? (
+          <Text style={styles.loadingText}>No posts found</Text>
+        ) : (
+          posts.map(post => (
+            <View key={post.id} style={styles.postCard}>
+              {/* User Info */}
+              <View style={styles.userInfo}>
+                <View style={styles.userLeft}>
+                  <Image
+                    source={require('../assets/conn.jpg')}
+                    style={styles.userImage}
+                  />
+                  <View>
+                    <Text style={styles.username}>
+                      {post.users?.name || 'Unknown'}
+                    </Text>
+                    <Text style={styles.subUsername}>
+                      @{post.users?.username || 'unknown'}
+                    </Text>
+                  </View>
                 </View>
+                <TouchableOpacity style={styles.moreIconButton}>
+                  <MaterialIcons name="more-vert" size={20} color="#555" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={styles.moreIconButton}>
-                <MaterialIcons name="more-vert" size={20} color="#555" />
+
+              {/* Post Image */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ProductPurchaseDetail', { post })}
+>
+              <View style={styles.imageWrapper}>
+                <Image
+                  source={{ uri: post.image_url }}
+                  style={styles.postImage}
+                />
+                <TouchableOpacity style={styles.heartIcon}>
+                  <MaterialIcons name="favorite-border" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              </TouchableOpacity>
+
+              {/* Post Details */}
+              <TouchableOpacity onPress={() => navigation.navigate('ProductPurchaseDetail',{post})}>
+              <View style={styles.detailsRow}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.title}>{post.product_name}</Text>
+                  <Text style={styles.subtext}>
+                    {truncateDescription(post.description)}
+                  </Text>
+                </View>
+                <Text style={styles.price}>₹{post.selling_price}</Text>
+              </View>
               </TouchableOpacity>
             </View>
-
-            {/* Post Image */}
-            <View style={styles.imageWrapper}>
-              <Image source={{ uri: post.image }} style={styles.postImage} />
-              <TouchableOpacity style={styles.heartIcon}>
-                <MaterialIcons name="favorite-border" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Post Details */}
-            <View style={styles.detailsRow}>
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={styles.title}>{post.title}</Text>
-                <Text style={styles.subtext}>{post.description}</Text>
-              </View>
-              <Text style={styles.price}>{post.price}</Text>
-            </View>
-          </View>
-        ))}
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -95,37 +137,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#333',
-    paddingHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-  },
   scroll: {
     paddingHorizontal: 15,
     paddingBottom: 20,
   },
-  postCard: {
-  alignSelf: 'center', 
-  width: '100%',        
-  maxWidth: 400,        
-  height: 370,
-  marginBottom: 30,
-  borderRadius: 12,
-  backgroundColor: '#fff',
-  elevation: 3,
-  overflow: 'hidden',
-  
-  
-},
-  userInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
+  loadingText: {
+    fontSize: 16,
+    color: '#777',
+    textAlign: 'center',
+    marginTop: 40,
   },
+  postCard: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: 30,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    elevation: 3,
+    overflow: 'hidden',
+  },
+ userInfo: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: 12,
+  backgroundColor: '#007bff',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.2,
+  shadowRadius: 3,
+  elevation: 2,
+  borderTopLeftRadius: 12,
+  borderTopRightRadius: 12,
+},
+
   userLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,19 +184,29 @@ const styles = StyleSheet.create({
   },
   username: {
     fontWeight: 'bold',
-    fontSize: 13,
+    fontSize: 14,
+    color: '#fff',
   },
-  userLocation: {
-    fontSize: 11,
-    color: '#888',
+  subUsername: {
+    fontSize: 12,
+    color: '#d1e3ff',
+    marginTop: -2,
+  },
+  moreIconButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 8,
+    borderRadius: 10,
   },
   imageWrapper: {
     position: 'relative',
   },
   postImage: {
     width: '100%',
-    height: 200,
-    resizeMode: 'cover',
+  aspectRatio: 16 / 9,
+  borderTopLeftRadius: 0,
+  borderTopRightRadius: 0,
+  resizeMode: 'contain', // ensures full image shows
+  backgroundColor: '#fff', // optional
   },
   heartIcon: {
     position: 'absolute',
@@ -163,29 +219,23 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
     padding: 10,
+    backgroundColor: '#eee',
   },
   title: {
     fontWeight: '600',
-    fontSize: 14,
-    marginBottom: 2,
+    fontSize: 15,
+    marginBottom: 4,
+    color: '#333',
   },
   subtext: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#777',
   },
   price: {
     fontWeight: 'bold',
     fontSize: 14,
-    color: '#00aa00',
-  },
-  moreIconButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 8,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: '#0aada8',
   },
 });
 
